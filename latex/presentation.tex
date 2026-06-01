@@ -1,0 +1,942 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+
+% --- Encodage et langue ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+
+% --- Mathématiques ---
+\usepackage{amsmath,amssymb,amsfonts,mathrsfs}
+\usepackage{mathtools}
+
+% --- Graphiques ---
+\usepackage{tikz}
+\usetikzlibrary{shapes,shapes.geometric,arrows,arrows.meta,positioning,fit,
+                backgrounds,calc,decorations.pathreplacing,patterns,chains,
+                shadows,trees,matrix}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+% --- Mise en forme ---
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{array}
+
+% --- Thème Beamer ---
+\usetheme{Madrid}
+\usecolortheme{whale}
+\useinnertheme{rounded}
+
+% --- Palette de couleurs personnalisée ---
+\definecolor{primaryblue}{RGB}{25, 65, 130}
+\definecolor{secondaryblue}{RGB}{60, 110, 175}
+\definecolor{accentorange}{RGB}{230, 130, 25}
+\definecolor{successgreen}{RGB}{40, 145, 90}
+\definecolor{dangerred}{RGB}{200, 50, 50}
+\definecolor{lightbg}{RGB}{240, 245, 250}
+\definecolor{darkgray}{RGB}{60, 60, 60}
+
+\setbeamercolor{structure}{fg=primaryblue}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{frametitle}{fg=white,bg=primaryblue}
+\setbeamercolor{block title}{fg=white,bg=primaryblue}
+\setbeamercolor{block body}{bg=lightbg}
+\setbeamercolor{block title alerted}{fg=white,bg=dangerred}
+\setbeamercolor{block body alerted}{bg=red!5}
+\setbeamercolor{block title example}{fg=white,bg=successgreen}
+\setbeamercolor{block body example}{bg=green!5}
+\setbeamercolor{itemize item}{fg=primaryblue}
+\setbeamercolor{itemize subitem}{fg=accentorange}
+\setbeamercolor{section in toc}{fg=primaryblue}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}[triangle]
+
+% --- Informations du document ---
+\title[EDA \& Finance Quantitative]{Algorithmes à Estimation de Distribution\\et Finance Quantitative}
+\subtitle{Une approche probabiliste pour l'optimisation de portefeuille}
+\author[Zahid \& El Arbani]{Achraf Zahid \and Mohamed Amine El Arbani}
+\institute[]{Sous la coordination de \\ \textbf{Pr. Abderrahim Azouani}}
+\date{\today}
+
+% ==========================================================
+\begin{document}
+% ==========================================================
+
+% --- Diapositive de titre ---
+\begin{frame}[plain]
+\titlepage
+\begin{center}
+\begin{tikzpicture}[scale=0.6]
+  \draw[primaryblue, thick] (0,0) circle (1cm);
+  \draw[primaryblue, thick] (0.5, 0) circle (0.6cm);
+  \draw[primaryblue, thick] (-0.5, 0) circle (0.6cm);
+  \node at (0, -1.5) {\tiny\textit{Modèles probabilistes en évolution}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+% --- Plan ---
+\begin{frame}{Plan de la présentation}
+\tableofcontents[hideallsubsections]
+\end{frame}
+
+% ==========================================================
+\section{Du génétique au probabiliste : un changement de paradigme}
+% ==========================================================
+
+\begin{frame}{Introduction : un défi persistant en optimisation}
+\begin{block}{Contexte}
+Pendant des décennies, les \textbf{Algorithmes Génétiques (AG)} ont dominé l'optimisation évolutionnaire, imitant la sélection naturelle par \emph{croisement}, \emph{mutation} et \emph{sélection}.
+\end{block}
+
+\vspace{0.3cm}
+\begin{alertblock}{Mais un problème persiste\ldots}
+Sur des problèmes complexes où les variables sont \textbf{fortement interdépendantes}, les AG classiques échouent systématiquement.
+\end{alertblock}
+
+\vspace{0.5cm}
+\centering
+\large
+\textit{Cette présentation raconte une révolution silencieuse :}\\
+\textit{le passage du génétique aveugle au probabiliste éclairé.}
+\end{frame}
+
+% --- Vulnérabilité des AG ---
+\begin{frame}{La vulnérabilité des AG : la disruption des schémas}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Un mécanisme aveugle}\\[0.2cm]
+Le croisement et la mutation agissent de manière \textcolor{dangerred}{aléatoire}, sans tenir compte des relations structurelles entre variables.
+
+\vspace{0.3cm}
+\textbf{La conséquence}\\[0.2cm]
+Dans les paysages \textbf{épistatiques} (où la fitness dépend de groupes coordonnés de variables), ces opérateurs \textcolor{dangerred}{détruisent} les bonnes solutions partielles : on parle de \emph{disruption de schémas}.
+
+\vspace{0.3cm}
+\begin{exampleblock}{En une phrase}
+L'AG ne sait pas \emph{ce qui marche ensemble} — il recombine au hasard.
+\end{exampleblock}
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.8]
+% Parent 1
+\foreach \i/\c in {0/blue,1/blue,2/blue,3/red,4/red,5/red} {
+  \fill[\c!50] (\i*0.55, 2) rectangle (\i*0.55+0.5, 2.5);
+  \draw[thick] (\i*0.55, 2) rectangle (\i*0.55+0.5, 2.5);
+}
+\node[left] at (-0.1, 2.25) {\textbf{P1}};
+
+% Parent 2
+\foreach \i/\c in {0/green,1/green,2/green,3/orange,4/orange,5/orange} {
+  \fill[\c!60] (\i*0.55, 1) rectangle (\i*0.55+0.5, 1.5);
+  \draw[thick] (\i*0.55, 1) rectangle (\i*0.55+0.5, 1.5);
+}
+\node[left] at (-0.1, 1.25) {\textbf{P2}};
+
+% Cut line
+\draw[dashed, very thick, dangerred] (1.93, 0.6) -- (1.93, 2.9);
+\node[dangerred, above, font=\tiny] at (1.93, 2.9) {coupure aléatoire};
+
+% Arrow
+\draw[->, very thick, primaryblue] (1.6, 0.9) -- (1.6, 0.5);
+
+% Child
+\foreach \i/\c in {0/blue,1/blue,2/blue,3/orange,4/orange,5/orange} {
+  \fill[\c!60] (\i*0.55, -0.2) rectangle (\i*0.55+0.5, 0.3);
+  \draw[thick] (\i*0.55, -0.2) rectangle (\i*0.55+0.5, 0.3);
+}
+\node[left] at (-0.1, 0.05) {\textbf{Enf.}};
+
+\node[below, dangerred, font=\small\bfseries] at (1.7, -0.5) {Schéma détruit !};
+\node[below, font=\tiny\itshape] at (1.7, -0.9) {Les dépendances bleu-rouge et vert-orange sont perdues};
+\end{tikzpicture}
+\end{columns}
+\end{frame}
+
+% --- Solution EDA ---
+\begin{frame}{La solution EDA : optimiser une distribution, pas des individus}
+\begin{block}{Définition}
+Les \textbf{EDA} (\emph{Estimation of Distribution Algorithms}), aussi appelés \emph{Probabilistic Model-Building Genetic Algorithms}, abordent l'optimisation comme un \textbf{raffinement itératif d'une distribution de probabilité jointe} $p_l(x)$.
+\end{block}
+
+\vspace{0.3cm}
+\textbf{Différence fondamentale :}
+\begin{itemize}
+  \item \textcolor{dangerred}{AG} : on manipule des \emph{individus} (chromosomes) par hasard.
+  \item \textcolor{successgreen}{EDA} : on apprend \emph{pourquoi} les bons individus sont bons, puis on échantillonne.
+\end{itemize}
+
+\vspace{0.3cm}
+\centering
+\begin{tikzpicture}[node distance=2cm, every node/.style={font=\footnotesize}]
+  \node[draw, rounded corners, fill=red!20, minimum height=1cm, minimum width=2.5cm] (ga) {AG : Manipulation aveugle};
+  \node[right=2cm of ga] (arrow) {\Huge $\Rightarrow$};
+  \node[draw, rounded corners, fill=green!20, minimum height=1cm, minimum width=2.5cm, right=2cm of arrow] (eda) {EDA : Modélisation explicite};
+\end{tikzpicture}
+\end{frame}
+
+% --- Cycle EDA ---
+\begin{frame}{Le cycle opérationnel des EDA}
+\centering
+\begin{tikzpicture}[scale=1, every node/.style={font=\small}]
+  % Nodes
+  \node[draw, circle, fill=primaryblue!20, minimum size=1.8cm, align=center] (pop) at (0,2) {Population\\initiale};
+  \node[draw, rectangle, rounded corners, fill=accentorange!30, minimum height=1.2cm, minimum width=2.5cm, align=center] (sel) at (4,2) {\textbf{1. Sélection}\\$D_l^{Se}$ (élite)};
+  \node[draw, rectangle, rounded corners, fill=successgreen!30, minimum height=1.2cm, minimum width=2.5cm, align=center] (learn) at (7.5,0) {\textbf{2. Apprentissage}\\du modèle $p_l(x)$};
+  \node[draw, rectangle, rounded corners, fill=secondaryblue!40, minimum height=1.2cm, minimum width=2.5cm, align=center] (sample) at (4,-2) {\textbf{3. Échantillonnage}\\nouvelle population};
+  \node[draw, diamond, fill=yellow!30, minimum size=1.5cm, align=center] (stop) at (0,0) {Critère\\d'arrêt ?};
+  \node[draw, rectangle, fill=red!20, minimum height=1cm, align=center] (end) at (-3,0) {Solution\\optimale};
+
+  % Arrows
+  \draw[->, very thick, primaryblue] (pop) -- (sel) node[midway, above, font=\tiny] {fitness};
+  \draw[->, very thick, primaryblue] (sel) -- (learn);
+  \draw[->, very thick, primaryblue] (learn) -- (sample);
+  \draw[->, very thick, primaryblue] (sample) -- (stop);
+  \draw[->, very thick, primaryblue] (stop) -- node[right, font=\tiny] {non} (pop);
+  \draw[->, very thick, dangerred] (stop) -- node[above, font=\tiny] {oui} (end);
+\end{tikzpicture}
+
+\vspace{0.3cm}
+\begin{block}{Clé de l'approche}
+Au lieu de croiser \emph{des individus}, on apprend la \textbf{distribution} qui les a générés, puis on en tire de nouveaux.
+\end{block}
+\end{frame}
+
+% --- Avantage clé ---
+\begin{frame}{L'avantage maître : l'explicabilité}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Le modèle probabiliste est lisible}\\[0.2cm]
+Le modèle appris $p_l(x)$ se matérialise sous forme d'un \textbf{Graphe Probabiliste (PGM)} :
+\begin{itemize}
+  \item Les \textcolor{primaryblue}{nœuds} = variables du problème.
+  \item Les \textcolor{accentorange}{arêtes} = dépendances apprises.
+\end{itemize}
+
+\vspace{0.3cm}
+\begin{exampleblock}{Bénéfice concret}
+Le décideur peut \textbf{inspecter} le graphe : quelles variables sont liées ? Quelles structures émergent ? Quel est le « squelette » du problème ?
+\end{exampleblock}
+
+C'est un atout décisif face à l'opacité des algorithmes évolutionnaires classiques.
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.8, every node/.style={circle, draw, fill=primaryblue!30, minimum size=0.7cm, font=\footnotesize}]
+  \node (a) at (0,2.5) {$X_1$};
+  \node (b) at (-1.5,1) {$X_2$};
+  \node (c) at (1.5,1) {$X_3$};
+  \node (d) at (-0.8,-0.5) {$X_4$};
+  \node (e) at (0.8,-0.5) {$X_5$};
+  \node (f) at (-2.3,-1.5) {$X_6$};
+  
+  \draw[->, thick, accentorange] (a) -- (b);
+  \draw[->, thick, accentorange] (a) -- (c);
+  \draw[->, thick, accentorange] (b) -- (d);
+  \draw[->, thick, accentorange] (c) -- (e);
+  \draw[->, thick, accentorange] (b) -- (f);
+  \draw[->, thick, accentorange] (d) -- (e);
+\end{tikzpicture}\\[0.2cm]
+\footnotesize\textit{Exemple de PGM : dépendances apprises entre variables.}
+\end{columns}
+\end{frame}
+
+% ==========================================================
+\section{Taxonomie des EDA : trois familles, trois complexités}
+% ==========================================================
+
+\begin{frame}{De « comment ça marche » à « lequel choisir »}
+\begin{center}
+\textit{Une fois la philosophie EDA comprise, une question naturelle se pose :}
+\end{center}
+
+\vspace{0.3cm}
+\begin{block}{La question centrale}
+\centering\large
+\textbf{Quel niveau de dépendance entre variables doit-on modéliser ?}
+\end{block}
+
+\vspace{0.3cm}
+La réponse à cette question divise les EDA en trois grandes familles, du plus simple au plus expressif :
+\begin{enumerate}
+  \item \textcolor{successgreen}{\textbf{Univariées}} — Indépendance totale.
+  \item \textcolor{accentorange}{\textbf{Bivariées}} — Dépendances par paires.
+  \item \textcolor{dangerred}{\textbf{Multivariées}} — Dépendances d'ordre supérieur.
+\end{enumerate}
+
+\vspace{0.3cm}
+\centering
+\textit{Plus on monte, plus on capture\ldots mais plus le coût computationnel grimpe.}
+\end{frame}
+
+% --- Univariées ---
+\begin{frame}{Factorisations univariées : la simplicité radicale}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Hypothèse}\\[0.1cm]
+Toutes les variables sont \textbf{indépendantes}. La distribution jointe se factorise comme un produit de marginales :
+\[
+p_l(x) = \prod_{i=1}^{n} p_l(x_i)
+\]
+
+\vspace{0.2cm}
+\textbf{Exemples}\\[0.1cm]
+\begin{itemize}
+  \item \textbf{UMDA} (Univariate Marginal Distribution Algorithm)
+  \item \textbf{PBIL} (Population-Based Incremental Learning)
+  \item \textbf{cGA} (Compact Genetic Algorithm)
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{Avantage} : Rapide, peu coûteux.\\
+\textbf{Limite} : Aveugle à toute corrélation.
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}[every node/.style={circle, draw, fill=successgreen!30, minimum size=0.8cm, font=\footnotesize}]
+  \node at (0,2) {$X_1$};
+  \node at (1.5,2) {$X_2$};
+  \node at (3,2) {$X_3$};
+  \node at (0,0.5) {$X_4$};
+  \node at (1.5,0.5) {$X_5$};
+  \node at (3,0.5) {$X_6$};
+\end{tikzpicture}\\[0.3cm]
+\footnotesize\textit{Aucune arête : indépendance totale.}
+\end{columns}
+\end{frame}
+
+% --- Bivariées ---
+\begin{frame}{Factorisations bivariées : capturer les paires}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Hypothèse}\\[0.1cm]
+On modélise des dépendances \textbf{par paires}. Le graphe forme un \emph{arbre} ou une \emph{forêt} :
+\[
+p_l(x) = p_l(x_{r}) \prod_{i \ne r} p_l(x_i \mid x_{\pi(i)})
+\]
+
+\vspace{0.2cm}
+\textbf{Exemples}\\[0.1cm]
+\begin{itemize}
+  \item \textbf{MIMIC} : structure en chaîne.
+  \item \textbf{BMDA} : Bivariate Marginal Distribution Algorithm.
+  \item \textbf{COMIT} : optimal tree structures.
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{Compromis} : Bon équilibre expressivité / coût.
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}[every node/.style={circle, draw, fill=accentorange!30, minimum size=0.8cm, font=\footnotesize}]
+  \node (a) at (1.5,2.5) {$X_1$};
+  \node (b) at (0,1.5) {$X_2$};
+  \node (c) at (3,1.5) {$X_3$};
+  \node (d) at (-1,0.3) {$X_4$};
+  \node (e) at (1,0.3) {$X_5$};
+  \node (f) at (3,0.3) {$X_6$};
+  \draw[thick, primaryblue] (a) -- (b);
+  \draw[thick, primaryblue] (a) -- (c);
+  \draw[thick, primaryblue] (b) -- (d);
+  \draw[thick, primaryblue] (b) -- (e);
+  \draw[thick, primaryblue] (c) -- (f);
+\end{tikzpicture}\\[0.3cm]
+\footnotesize\textit{Structure arborescente : chaque variable a au plus un parent.}
+\end{columns}
+\end{frame}
+
+% --- Multivariées ---
+\begin{frame}{Factorisations multivariées : la puissance maximale}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Hypothèse}\\[0.1cm]
+On capture des dépendances d'\textbf{ordre supérieur}, possiblement chevauchantes.
+
+\vspace{0.2cm}
+\textbf{Deux approches phares}
+\begin{itemize}
+  \item \textbf{eCGA} (\emph{extended Compact GA}) : regroupe les variables en \textbf{clusters disjoints} via le principe MDL (\emph{Minimum Description Length}).
+  \item \textbf{BOA / hBOA} (\emph{(hierarchical) Bayesian Optimization Algorithm}) : utilise un \textbf{réseau bayésien} (DAG) pour des relations hiérarchiques complexes.
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{Force} : Capture l'épistasie réelle.\\
+\textbf{Coût} : Apprentissage de structure coûteux.
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}[every node/.style={circle, draw, fill=dangerred!30, minimum size=0.7cm, font=\footnotesize}]
+  \node (a) at (0,3) {$X_1$};
+  \node (b) at (-1.5,2) {$X_2$};
+  \node (c) at (1.5,2) {$X_3$};
+  \node (d) at (-1.5,0.5) {$X_4$};
+  \node (e) at (0,0.5) {$X_5$};
+  \node (f) at (1.5,0.5) {$X_6$};
+  \node (g) at (0,-0.8) {$X_7$};
+  \draw[->, thick, primaryblue] (a) -- (b);
+  \draw[->, thick, primaryblue] (a) -- (c);
+  \draw[->, thick, primaryblue] (b) -- (d);
+  \draw[->, thick, primaryblue] (b) -- (e);
+  \draw[->, thick, primaryblue] (c) -- (e);
+  \draw[->, thick, primaryblue] (c) -- (f);
+  \draw[->, thick, primaryblue] (d) -- (g);
+  \draw[->, thick, primaryblue] (e) -- (g);
+  \draw[->, thick, primaryblue] (f) -- (g);
+\end{tikzpicture}\\[0.3cm]
+\footnotesize\textit{DAG : dépendances multiples et chevauchantes.}
+\end{columns}
+\end{frame}
+
+% --- Comparaison ---
+\begin{frame}{Synthèse visuelle des trois familles}
+\centering
+\begin{tikzpicture}[scale=0.9]
+% Univariée
+\node[font=\small\bfseries, successgreen] at (-4, 3.2) {Univariée};
+\node[font=\tiny] at (-4, 2.7) {Aucune dépendance};
+\foreach \x/\y in {-5/1.5, -4/1.5, -3/1.5, -5/0.5, -4/0.5, -3/0.5} {
+  \node[circle, draw, fill=successgreen!40, minimum size=0.5cm] at (\x, \y) {};
+}
+
+% Bivariée
+\node[font=\small\bfseries, accentorange] at (0, 3.2) {Bivariée};
+\node[font=\tiny] at (0, 2.7) {Dépendances par paires};
+\foreach \name/\x/\y in {a/-1/1.7, b/0/1.7, c/1/1.7, d/-1/0.5, e/0/0.5, f/1/0.5} {
+  \node[circle, draw, fill=accentorange!40, minimum size=0.5cm] (\name) at (\x, \y) {};
+}
+\draw[thick, primaryblue] (a) -- (b);
+\draw[thick, primaryblue] (b) -- (c);
+\draw[thick, primaryblue] (a) -- (d);
+\draw[thick, primaryblue] (b) -- (e);
+\draw[thick, primaryblue] (c) -- (f);
+
+% Multivariée
+\node[font=\small\bfseries, dangerred] at (4, 3.2) {Multivariée};
+\node[font=\tiny] at (4, 2.7) {Dépendances d'ordre $k$};
+\foreach \name/\x/\y in {A/3/1.7, B/4/1.7, C/5/1.7, D/3/0.5, E/4/0.5, F/5/0.5} {
+  \node[circle, draw, fill=dangerred!40, minimum size=0.5cm] (\name) at (\x, \y) {};
+}
+\draw[->, thick, primaryblue] (A) -- (B);
+\draw[->, thick, primaryblue] (B) -- (C);
+\draw[->, thick, primaryblue] (A) -- (D);
+\draw[->, thick, primaryblue] (A) -- (E);
+\draw[->, thick, primaryblue] (B) -- (E);
+\draw[->, thick, primaryblue] (C) -- (F);
+\draw[->, thick, primaryblue] (D) -- (E);
+\draw[->, thick, primaryblue] (E) -- (F);
+
+% Arrow
+\draw[->, very thick, gray] (-5.5, -0.5) -- (5.5, -0.5);
+\node[font=\footnotesize\itshape, below] at (0, -0.6) {Complexité du modèle et coût d'apprentissage croissants};
+\end{tikzpicture}
+
+\vspace{0.3cm}
+\begin{block}{À retenir}
+Le choix de la famille dépend de la \textbf{structure du problème} : un problème peu épistatique se contente d'un modèle simple ; un problème fortement couplé exige du multivarié.
+\end{block}
+\end{frame}
+
+% ==========================================================
+\section{Application réelle : la finance quantitative}
+% ==========================================================
+
+\begin{frame}{De la théorie au terrain : pourquoi la finance ?}
+\begin{center}
+\textit{Maintenant que la machinerie est posée, il faut un terrain d'application.}\\
+\textit{Et il en existe peu de plus exigeants que la finance.}
+\end{center}
+
+\vspace{0.4cm}
+\begin{block}{Pourquoi ce choix ?}
+La sélection de portefeuille combine :
+\begin{itemize}
+  \item Des \textbf{variables discrètes} (quels actifs choisir ?)
+  \item Des \textbf{variables continues} (avec quels poids ?)
+  \item Des \textbf{contraintes dures} (budget, cardinalité, bornes)
+  \item Une \textbf{forte épistasie} (changer un actif force à redistribuer le reste)
+\end{itemize}
+\end{block}
+
+\vspace{0.3cm}
+\centering
+\textbf{C'est précisément le genre de paysage où les EDA dominent.}
+\end{frame}
+
+% --- Problème CCMV ---
+\begin{frame}{Le problème CCMV : Mean-Variance sous contrainte de cardinalité}
+\begin{block}{Formulation}
+Sélectionner et pondérer $K$ actifs parmi $n$ pour minimiser le risque à rendement donné (ou maximiser le rendement à risque donné).
+\end{block}
+
+\vspace{0.1cm}
+\textbf{Formulation mathématique :}
+\[
+\min_{w} \; \underbrace{\sum_{i=1}^{n}\sum_{j=1}^{n} w_i w_j \sigma_{ij}}_{\text{Risque (variance)}}
+\quad - \quad \lambda \cdot \underbrace{\sum_{i=1}^{n} w_i \mu_i}_{\text{Rendement}}
+\]
+
+\textbf{Sous contraintes :}
+\[
+\sum_{i=1}^{n} w_i = 1, \quad \sum_{i=1}^{n} s_i = K, \quad \epsilon_i s_i \leq w_i \leq \delta_i s_i, \quad s_i \in \{0,1\}
+\]
+
+\vspace{0.1cm}
+\begin{exampleblock}{Lecture}
+$s_i$ = 1 si l'actif $i$ est sélectionné ; $w_i$ = son poids dans le portefeuille.
+\end{exampleblock}
+\end{frame}
+
+% --- Contraintes ---
+\begin{frame}{Les contraintes : ce que la théorie classique ignore}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{1. Cardinalité $K$}\\[0.1cm]
+Limite le nombre d'actifs actifs $\Rightarrow$ réduit les frais de transaction et simplifie la gestion.
+
+\vspace{0.3cm}
+\textbf{2. Bornes $\epsilon$ et $\delta$}\\[0.1cm]
+Force chaque poids dans $[\epsilon_i, \delta_i]$ $\Rightarrow$ évite les positions infimes ou la sur-concentration.
+
+\vspace{0.3cm}
+\textbf{3. Budget}\\[0.1cm]
+Les poids somment à 1 : tout le capital est investi.
+
+\vspace{0.3cm}
+\begin{alertblock}{Conséquence}
+La frontière efficiente \textbf{n'est plus continue}.
+\end{alertblock}
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=6cm, height=5cm,
+  xlabel={\footnotesize Risque ($\sigma$)},
+  ylabel={\footnotesize Rendement ($\mu$)},
+  xmin=0, xmax=10, ymin=0, ymax=10,
+  axis lines=left,
+  legend style={font=\tiny, at={(0.5, -0.25)}, anchor=north, legend columns=1},
+  ticks=none,
+]
+% Frontière classique
+\addplot[domain=1:10, samples=100, primaryblue, very thick] {1.5*sqrt(x-0.5)+2};
+\addlegendentry{Markowitz classique (continue)}
+% Frontière CCMV
+\addplot[only marks, mark=*, mark size=1.5, dangerred] coordinates {
+(1.5, 3.3)(2.2, 4.4)(2.6, 4.8)(3.5, 5.5)(4.3, 6.0)(5.1, 6.6)
+(6.0, 7.0)(7.0, 7.5)(8.2, 8.0)(9.5, 8.5)
+};
+\addlegendentry{Frontière CCMV (discontinue)}
+\end{axis}
+\end{tikzpicture}
+\end{columns}
+\end{frame}
+
+% --- Complexité ---
+\begin{frame}{La complexité : un mélange explosif}
+\begin{block}{Nature du problème}
+La combinaison de :
+\begin{itemize}
+  \item Variables \textbf{discrètes} (sélection $s_i \in \{0,1\}$)
+  \item Variables \textbf{continues} (poids $w_i \in [\epsilon_i, \delta_i]$)
+  \item Une fonction objectif \textbf{non-convexe}
+\end{itemize}
+rend le problème \textcolor{dangerred}{\textbf{NP-difficile}}.
+\end{block}
+
+\vspace{0.3cm}
+\textbf{Conséquences pratiques :}
+\begin{itemize}
+  \item Pas de solution analytique.
+  \item Les méthodes exactes explosent au-delà de quelques dizaines d'actifs.
+  \item Une \textbf{frontière efficiente discontinue} : de petits changements de $K$ déplacent brutalement l'optimum.
+\end{itemize}
+
+\vspace{0.3cm}
+\centering
+\textit{Il faut donc une métaheuristique. Mais pas n'importe laquelle.}
+\end{frame}
+
+% ==========================================================
+\section{Pourquoi les métaheuristiques standards échouent}
+% ==========================================================
+
+\begin{frame}{Le verdict : les AG standards ne suffisent pas}
+\begin{center}
+\textit{On pourrait penser qu'un bon AG ferait l'affaire. Trois raisons disent le contraire.}
+\end{center}
+
+\vspace{0.3cm}
+\begin{enumerate}
+  \item \textbf{\textcolor{dangerred}{Épistasie variable}} — actifs et poids sont fortement couplés.
+  \item \textbf{\textcolor{dangerred}{Piège de l'infaisabilité}} — le croisement viole les contraintes.
+  \item \textbf{\textcolor{dangerred}{Inefficacité}} — les réparations dégradent les performances.
+\end{enumerate}
+
+\vspace{0.4cm}
+\centering
+\textit{Examinons chaque point.}
+\end{frame}
+
+% --- Épistasie ---
+\begin{frame}{Obstacle 1 : l'épistasie entre sélection et poids}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Le couplage caché}\\[0.1cm]
+Changer la sélection $s_i$ d'un actif force la \textbf{redistribution} de \emph{tous} les poids restants pour respecter le budget.
+
+\vspace{0.3cm}
+$\Rightarrow$ \emph{Toutes les variables sont liées entre elles, mais pas de manière simple.}
+
+\vspace{0.3cm}
+\textbf{Pour un AG classique :}\\[0.1cm]
+Le croisement échange des bits sans comprendre ce couplage $\Rightarrow$ il \textcolor{dangerred}{casse} les portefeuilles optimaux locaux.
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.85]
+\node[circle, draw, fill=primaryblue!30, minimum size=0.9cm] (a) at (0, 2) {$s_1$};
+\node[circle, draw, fill=primaryblue!30, minimum size=0.9cm] (b) at (1.8, 2) {$s_2$};
+\node[circle, draw, fill=primaryblue!30, minimum size=0.9cm] (c) at (3.6, 2) {$s_3$};
+
+\node[circle, draw, fill=accentorange!30, minimum size=0.9cm] (d) at (0, 0) {$w_1$};
+\node[circle, draw, fill=accentorange!30, minimum size=0.9cm] (e) at (1.8, 0) {$w_2$};
+\node[circle, draw, fill=accentorange!30, minimum size=0.9cm] (f) at (3.6, 0) {$w_3$};
+
+\draw[<->, thick, dangerred] (a) -- (d);
+\draw[<->, thick, dangerred] (b) -- (e);
+\draw[<->, thick, dangerred] (c) -- (f);
+\draw[<->, dashed, dangerred] (d) to[bend right=20] (e);
+\draw[<->, dashed, dangerred] (e) to[bend right=20] (f);
+\draw[<->, dashed, dangerred] (d) to[bend right=35] (f);
+
+\node[font=\tiny, primaryblue, above] at (1.8, 2.6) {Sélection (binaire)};
+\node[font=\tiny, accentorange, below] at (1.8, -0.6) {Poids (continus)};
+\end{tikzpicture}
+\end{columns}
+\end{frame}
+
+% --- Infaisabilité ---
+\begin{frame}{Obstacle 2 : le piège de l'infaisabilité}
+\begin{block}{Le problème}
+Le croisement aveugle d'un AG produit fréquemment des descendants qui :
+\begin{itemize}
+  \item ont trop ou trop peu d'actifs sélectionnés ($\sum s_i \neq K$),
+  \item ont des poids qui ne somment pas à 1,
+  \item violent les bornes $[\epsilon_i, \delta_i]$.
+\end{itemize}
+\end{block}
+
+\vspace{0.3cm}
+\centering
+\begin{tikzpicture}[scale=0.8]
+\node[draw, rounded corners, fill=successgreen!20, minimum width=2.2cm, minimum height=1cm, align=center] (p1) at (-3, 0) {\footnotesize Parent 1\\\tiny $K=5$ \textcolor{successgreen}{\checkmark}};
+\node[draw, rounded corners, fill=successgreen!20, minimum width=2.2cm, minimum height=1cm, align=center] (p2) at (-3, -1.5) {\footnotesize Parent 2\\\tiny $K=5$ \textcolor{successgreen}{\checkmark}};
+\node[draw, rounded corners, fill=red!20, minimum width=2.2cm, minimum height=1cm, align=center] (c1) at (2, -0.3) {\footnotesize Enfant 1\\\tiny $K=7$ \textcolor{red}{$\times$}};
+\node[draw, rounded corners, fill=red!20, minimum width=2.2cm, minimum height=1cm, align=center] (c2) at (2, -1.5) {\footnotesize Enfant 2\\\tiny $\sum w \neq 1$ \textcolor{red}{$\times$}};
+\draw[->, very thick, primaryblue] (-1.7, -0.75) -- (0.7, -0.75);
+\node[font=\tiny] at (-0.5, -0.4) {croisement};
+\node[font=\tiny] at (-0.5, -1.1) {aveugle};
+\end{tikzpicture}
+\end{frame}
+
+% --- Inefficacité ---
+\begin{frame}{Obstacle 3 : le coût des réparations}
+\textbf{Solution adoptée par les AG classiques}\\[0.1cm]
+Des \emph{heuristiques de réparation} pour ramener les enfants infaisables dans l'espace admissible.
+
+\vspace{0.3cm}
+\begin{alertblock}{Mais à quel prix ?}
+\begin{itemize}
+  \item Coût computationnel \textbf{élevé} par génération.
+  \item Réparations \textbf{biaisées} : elles tirent toujours la population dans la même direction.
+  \item Résultat : \textcolor{dangerred}{convergence prématurée} vers des optima locaux pauvres.
+\end{itemize}
+\end{alertblock}
+
+\vspace{0.3cm}
+\begin{exampleblock}{La promesse des EDA}
+Apprendre directement la \textbf{distribution} des portefeuilles \emph{faisables et performants} $\Rightarrow$ aucun besoin de réparation. Les nouveaux échantillons respectent statistiquement les contraintes.
+\end{exampleblock}
+\end{frame}
+
+% ==========================================================
+\section{EDA en action : du simple au sophistiqué}
+% ==========================================================
+
+\begin{frame}{Deux exemples concrets pour deux niveaux de complexité}
+\begin{center}
+\textit{Voyons maintenant deux EDA appliqués à la finance,\\un de chaque famille extrême :}
+\end{center}
+
+\vspace{0.4cm}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\begin{block}{A. PBIL-CCPS}
+\centering
+\textcolor{successgreen}{\textbf{Approche univariée}}\\[0.2cm]
+Probabilité indépendante par actif.\\
+Rapide, élégant, scalable.
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{B. Copula-EDA}
+\centering
+\textcolor{dangerred}{\textbf{Approche multivariée non-linéaire}}\\[0.2cm]
+Modèle de dépendances par copules.\\
+Robuste aux krachs et aux co-mouvements extrêmes.
+\end{block}
+\end{columns}
+
+\vspace{0.3cm}
+\centering
+\textit{Le premier illustre l'efficacité. Le second illustre la sophistication.}
+\end{frame}
+
+% --- PBIL ---
+\begin{frame}{A. PBIL-CCPS : un vecteur de probabilité comme mémoire}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Mécanisme}\\[0.1cm]
+On maintient un \textbf{vecteur de probabilité} $v = (v_1, \ldots, v_n)$ où $v_i$ = probabilité que l'actif $i$ soit sélectionné.
+
+\vspace{0.2cm}
+\textbf{Mise à jour}\\[0.1cm]
+À chaque génération, le vecteur est tiré vers les meilleurs portefeuilles via un taux d'apprentissage $LR$ :
+\[
+v_i^{(t+1)} = (1 - LR)\, v_i^{(t)} + LR \cdot \bar{x}_i^{\text{élite}}
+\]
+
+\vspace{0.2cm}
+\textbf{Résultat}\\[0.1cm]
+\begin{itemize}
+  \item Cartographie efficacement les frontières non-dominées.
+  \item Coût computationnel \textbf{très inférieur} à un AG.
+\end{itemize}
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=6cm, height=5cm,
+  ybar,
+  bar width=0.25cm,
+  xlabel={\tiny Actif $i$},
+  ylabel={\tiny $v_i$ (probabilité)},
+  ymin=0, ymax=1,
+  symbolic x coords={A1,A2,A3,A4,A5,A6,A7,A8},
+  xtick=data,
+  ytick={0,0.5,1},
+  tick label style={font=\tiny},
+  legend style={font=\tiny, at={(0.5,-0.3)}, anchor=north, legend columns=2},
+]
+\addplot[fill=primaryblue!50] coordinates {(A1, 0.5)(A2, 0.5)(A3, 0.5)(A4, 0.5)(A5, 0.5)(A6, 0.5)(A7, 0.5)(A8, 0.5)};
+\addlegendentry{Initial}
+\addplot[fill=accentorange!70] coordinates {(A1, 0.9)(A2, 0.15)(A3, 0.8)(A4, 0.25)(A5, 0.95)(A6, 0.1)(A7, 0.7)(A8, 0.2)};
+\addlegendentry{Convergé}
+\end{axis}
+\end{tikzpicture}\\
+\footnotesize\textit{Le vecteur converge vers les actifs prometteurs.}
+\end{columns}
+\end{frame}
+
+% --- Limite des modèles gaussiens ---
+\begin{frame}{B. Pourquoi le gaussien ne suffit plus en finance}
+\begin{block}{Le présupposé des EDA continus classiques}
+Modéliser les rendements par une distribution \textbf{gaussienne multivariée} $\Rightarrow$ corrélations linéaires, queues symétriques.
+\end{block}
+
+\vspace{0.3cm}
+\begin{alertblock}{La réalité des marchés}
+\begin{itemize}
+  \item Les actifs \textbf{chutent ensemble} pendant les crises (dépendance de queue).
+  \item Les corrélations \textbf{ne sont pas linéaires}.
+  \item Les distributions ont des \textbf{queues épaisses} (kurtosis élevée).
+\end{itemize}
+\end{alertblock}
+
+\vspace{0.3cm}
+\centering
+\textbf{Le modèle gaussien sous-estime systématiquement le risque de crash.}\\
+\textit{Il faut un outil plus puissant : les copules.}
+\end{frame}
+
+% --- Théorie des copules ---
+\begin{frame}{La théorie des copules : marginales et dépendance, séparées}
+\begin{block}{Théorème de Sklar (1959)}
+Toute distribution jointe peut s'écrire comme :
+\[
+F(x_1, \ldots, x_n) = C\bigl(F_1(x_1), \ldots, F_n(x_n)\bigr)
+\]
+\begin{itemize}
+  \item $F_i$ : distributions marginales de chaque actif.
+  \item $C$ : \textbf{copule}, qui capture la structure de dépendance pure.
+\end{itemize}
+\end{block}
+
+\vspace{0.2cm}
+\centering
+\begin{tikzpicture}[scale=0.85]
+\node[draw, rounded corners, fill=primaryblue!20, minimum width=2.8cm, minimum height=0.8cm] (joint) at (0, 0) {\footnotesize Distribution jointe $F$};
+\node[draw, rounded corners, fill=successgreen!30, minimum width=2.6cm, minimum height=0.8cm, align=center] (marg) at (-3, -1.6) {\footnotesize Marginales $F_i$\\\tiny\textit{comportement individuel}};
+\node[draw, rounded corners, fill=accentorange!30, minimum width=2.6cm, minimum height=0.8cm, align=center] (cop) at (3, -1.6) {\footnotesize Copule $C$\\\tiny\textit{structure de dépendance}};
+\draw[->, very thick, primaryblue] (joint) -- (marg);
+\draw[->, very thick, primaryblue] (joint) -- (cop);
+\end{tikzpicture}
+\end{frame}
+
+% --- Avantage des copules ---
+\begin{frame}{Copules archimédiennes et vine : capter le non-linéaire}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\textbf{Familles utilisées}
+\begin{itemize}
+  \item \textbf{Archimédiennes} (Clayton, Gumbel, Frank) : capturent des asymétries de queue.
+  \item \textbf{Vine copulas} : décomposent une dépendance haute-dimension en cascade de copules bivariées.
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Bénéfices pour l'EDA}
+\begin{itemize}
+  \item Capture des linkages \textbf{non-linéaires} et \textbf{multi-dimensionnels}.
+  \item Navigation efficace dans un paysage \textbf{non-convexe}.
+  \item Excellente \textbf{efficacité d'échantillonnage}.
+\end{itemize}
+
+\column{0.45\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=6cm, height=5cm,
+  xlabel={\tiny Actif A},
+  ylabel={\tiny Actif B},
+  xmin=0, xmax=1, ymin=0, ymax=1,
+  ticks=none,
+  axis lines=left,
+  title={\footnotesize Copule de Clayton (queue inf.)},
+  title style={font=\footnotesize},
+]
+\addplot[only marks, mark=*, mark size=0.6, primaryblue, opacity=0.6] coordinates {
+(0.05,0.07)(0.08,0.06)(0.1,0.12)(0.12,0.15)(0.06,0.1)(0.15,0.18)
+(0.2,0.25)(0.25,0.3)(0.3,0.32)(0.35,0.4)(0.4,0.38)(0.45,0.5)
+(0.5,0.45)(0.55,0.6)(0.6,0.55)(0.65,0.7)(0.7,0.65)(0.75,0.85)
+(0.8,0.7)(0.85,0.95)(0.9,0.8)(0.95,0.9)(0.4,0.6)(0.5,0.3)(0.6,0.4)
+(0.7,0.5)(0.3,0.5)(0.25,0.45)(0.45,0.35)(0.55,0.4)(0.85,0.75)
+};
+\end{axis}
+\end{tikzpicture}\\
+\footnotesize\textit{Les points s'agglutinent près de (0,0) : krachs simultanés.}
+\end{columns}
+\end{frame}
+
+% ==========================================================
+\section{Synthèse et perspectives de recherche}
+% ==========================================================
+
+\begin{frame}{Bilan de la trajectoire}
+\centering
+\begin{tikzpicture}[node distance=0.4cm, every node/.style={font=\footnotesize}]
+  \node[draw, rounded corners, fill=red!20, minimum width=2.5cm, minimum height=0.8cm, align=center] (a) {Limites des AG :\\disruption de schémas};
+  \node[draw, rounded corners, fill=primaryblue!20, minimum width=2.5cm, minimum height=0.8cm, align=center, right=of a] (b) {Réponse EDA :\\apprendre la distribution};
+  \node[draw, rounded corners, fill=accentorange!20, minimum width=2.5cm, minimum height=0.8cm, align=center, right=of b] (c) {Taxonomie :\\univarié $\to$ multivarié};
+
+  \node[draw, rounded corners, fill=successgreen!20, minimum width=2.5cm, minimum height=0.8cm, align=center, below=1.2cm of b] (d) {Application : CCMV,\\NP-difficile};
+  \node[draw, rounded corners, fill=yellow!30, minimum width=2.5cm, minimum height=0.8cm, align=center, right=of d] (e) {Solutions :\\PBIL-CCPS, Copula-EDA};
+
+  \draw[->, very thick, primaryblue] (a) -- (b);
+  \draw[->, very thick, primaryblue] (b) -- (c);
+  \draw[->, very thick, primaryblue] (c) |- (e);
+  \draw[->, very thick, primaryblue] (e) -- (d);
+\end{tikzpicture}
+
+\vspace{0.4cm}
+\textit{Nous tenons un cadre puissant. Mais où va la recherche ?}
+\end{frame}
+
+% --- Hybridation ---
+\begin{frame}{Direction 1 : l'hybridation des EDA}
+\begin{block}{Idée}
+Combiner la \textbf{vision globale} des EDA avec la \textbf{précision locale} d'autres méthodes.
+\end{block}
+
+\vspace{0.3cm}
+\textbf{Combinaisons phares}
+\begin{itemize}
+  \item \textbf{hBOA + Hill Climber} : un EDA hiérarchique guide l'exploration, un grimpeur de colline raffine localement.
+  \item \textbf{PBILDE} : marie PBIL (probabiliste) et \emph{Differential Evolution} (continu, précis).
+\end{itemize}
+
+\vspace{0.3cm}
+\begin{exampleblock}{Pourquoi ça marche}
+Les EDA excellent à \emph{trouver la bonne région} ; les méthodes locales excellent à \emph{trouver le bon point}. Ensemble, on couvre les deux régimes.
+\end{exampleblock}
+\end{frame}
+
+% --- Deep generative ---
+\begin{frame}{Direction 2 : les cadres génératifs profonds}
+\begin{block}{Idée}
+Remplacer les PGM classiques (réseaux bayésiens, arbres) par des \textbf{modèles génératifs profonds}.
+\end{block}
+
+\vspace{0.3cm}
+\textbf{Candidats}
+\begin{itemize}
+  \item \textbf{GAN} (\emph{Generative Adversarial Networks}) : échantillons réalistes à grande échelle.
+  \item \textbf{Modèles de diffusion} : génération haute fidélité, contrôlable.
+\end{itemize}
+
+\vspace{0.3cm}
+\begin{exampleblock}{Ce que cela débloque}
+La possibilité de scaler les EDA à des problèmes avec \textbf{des millions de variables} — impossible avec les modèles probabilistes classiques.
+\end{exampleblock}
+
+\vspace{0.2cm}
+\centering
+\textit{Une convergence prometteuse entre évolution et apprentissage profond.}
+\end{frame}
+
+% --- Conclusion ---
+\begin{frame}{Conclusion}
+\begin{block}{En une phrase}
+Les EDA transforment l'optimisation évolutionnaire en \textbf{discipline statistique}, ouvrant la porte à des problèmes que les AG classiques ne pouvaient pas attaquer.
+\end{block}
+
+\vspace{0.3cm}
+\textbf{Trois idées à retenir}
+\begin{enumerate}
+  \item Les EDA apprennent \emph{pourquoi} les bonnes solutions sont bonnes — pas seulement \emph{quelles} elles sont.
+  \item La finance quantitative est un terrain idéal : forte épistasie, contraintes dures, paysage non-convexe.
+  \item L'avenir mêle EDA, optimisation locale et apprentissage profond.
+\end{enumerate}
+
+\vspace{0.3cm}
+\begin{center}
+\large\itshape
+« Optimiser, ce n'est plus chercher au hasard.\\
+C'est apprendre à chercher. »
+\end{center}
+\end{frame}
+
+% --- Remerciements ---
+\begin{frame}[plain]
+\begin{center}
+\vspace{1cm}
+{\Huge\bfseries\color{primaryblue} Merci pour votre attention}\\[0.5cm]
+{\Large\itshape Questions \& discussions}\\[1.5cm]
+
+\begin{tikzpicture}[scale=0.8]
+  \draw[primaryblue, very thick] (0,0) circle (1.5cm);
+  \draw[accentorange, very thick] (0.7, 0) circle (0.9cm);
+  \draw[successgreen, very thick] (-0.7, 0) circle (0.9cm);
+\end{tikzpicture}\\[0.8cm]
+
+{\normalsize\textbf{Achraf Zahid \ \&\ Mohamed Amine El Arbani}}\\[0.2cm]
+{\small Sous la coordination de \textbf{Pr. Abderrahim Azouani}}
+\end{center}
+\end{frame}
+
+\end{document}
